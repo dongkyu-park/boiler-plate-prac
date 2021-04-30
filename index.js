@@ -5,7 +5,7 @@ const bodyParser = require('body-parser') // 다운받은 body-parser 모듈을 
 const cookieParser = require('cookie-parser') // 다운받은 cookie-parser 모듈을 가져온다.
 
 const config = require('./config/key') // key.js 파일을 가져온다.
-
+const { auth } = require('./middleware/auth') // middleware 폴더 안의 auth 파일을 가져온다.
 const { User } = require("./models/User") // User model을 가져온다.
 
 app.use(bodyParser.urlencoded({extended: true})) // application/x-www-form-urlencoded 형태의 데이터를 분석해서 가져올 수 있게 설정
@@ -20,7 +20,7 @@ mongoose.connect(config.mongoURI, {
 
 app.get('/', (req, res) => res.send('Hello World! nodemon HI'))
 
-app.post('/register', (req, res) => {
+app.post('/api/users/register', (req, res) => {
 
     // 회원 가입 할 때 필요한 정보들을 client에서 가져오면
     // 그것들을 데이터 베이스에 넣어준다.
@@ -35,7 +35,7 @@ app.post('/register', (req, res) => {
 
 })
 
-app.post('/login', (req, res) => {
+app.post('/api/users/login', (req, res) => {
 
     // 1. 요청된 이메일이 데이터베이스에 존재하는지 찾는다.
     User.findOne({ email: req.body.email }, (err, user) => {
@@ -62,6 +62,22 @@ app.post('/login', (req, res) => {
             .json({ loginSuccess: true, userId: user._id })
         })
 
+    })
+})
+
+// role 1 어드민    role 2 특정 부서 어드민
+// role 0 -> 일반유저   role 0이 아니면 관리자
+app.get('/api/users/auth', auth, (req, res) => {
+    // 여기까지 미들웨어를 통과해 왔다는 얘기는 Authentication이 Ture 라는 말이다.
+    res.status(200).json({
+        _id: req.user._id,
+        isAdmin: req.user.role === 0 ? false : true,
+        isAuth: true,
+        email: req.user.email,
+        name: req.user.name,
+        lastname: req.user.lastname,
+        role: req.user.role,
+        image: req.user.image
     })
 })
 
